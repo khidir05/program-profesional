@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Droplet, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
-import api from '../../lib/axios';
 
 export default function Login() {
   const [identifier, setIdentifier] = useState('');
@@ -11,19 +10,20 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const res = await api.post('/auth/login', { identifier, password });
-      const { access_token, user } = res.data;
-      localStorage.setItem('token', access_token);
-      localStorage.setItem('role', user.role);
-
-      switch (user.role) {
-        case 'admin': navigate('/admin/dashboard'); break;
-        case 'petugas': navigate('/petugas/dashboard'); break;
-        default: navigate('/home');
-      }
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Login Gagal. Periksa kembali kredensial Anda.');
+    
+    // Local Login Logic
+    if (identifier === 'admin' && password === 'admin') {
+      localStorage.setItem('token', 'fake-admin-token');
+      localStorage.setItem('role', 'admin');
+      localStorage.setItem('name', 'Administrator System');
+      navigate('/admin/dashboard');
+    } else if (identifier === 'instansi' && password === 'instansi') {
+      localStorage.setItem('token', 'fake-instansi-token');
+      localStorage.setItem('role', 'instansi');
+      localStorage.setItem('name', 'Petugas Instansi');
+      navigate('/instansi/dashboard');
+    } else {
+      alert('Login Gagal. Gunakan admin/admin atau instansi/instansi');
     }
   };
 
