@@ -11,16 +11,19 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Local Login Logic
+    // Simulate API Response for Local Login
     if (identifier === 'admin' && password === 'admin') {
       localStorage.setItem('token', 'fake-admin-token');
-      localStorage.setItem('role', 'admin');
-      localStorage.setItem('name', 'Administrator System');
+      localStorage.setItem('role', 'Admin Pusat');
+      localStorage.setItem('name', 'Budi Santoso');
+      localStorage.setItem('instansi', 'Sistem Pengaduan Pusat');
       navigate('/admin/dashboard');
     } else if (identifier === 'instansi' && password === 'instansi') {
       localStorage.setItem('token', 'fake-instansi-token');
-      localStorage.setItem('role', 'instansi');
-      localStorage.setItem('name', 'Petugas Instansi');
+      localStorage.setItem('role', 'Petugas Penindak');
+      localStorage.setItem('name', 'Siti Aminah');
+      localStorage.setItem('instansi', 'Dinas Sosial Kab. Cilacap');
+      // For dynamic routing in the future based on API, we just map it to their specific dashboard
       navigate('/instansi/dashboard');
     } else {
       alert('Login Gagal. Gunakan admin/admin atau instansi/instansi');

@@ -5,6 +5,8 @@ import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
+import api from '../../lib/axios';
+
 // FIX: Menangani Ikon Marker yang hilang menggunakan CDN resmi Leaflet
 const markerIcon = new L.Icon({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
@@ -41,6 +43,8 @@ function LocationPicker({ position, setPosition }: { position: L.LatLng | null, 
 export default function Pengaduan() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [nama, setNama] = useState('');
+  const [nomorHP, setNomorHP] = useState('');
   const [aduan, setAduan] = useState('');
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -48,7 +52,101 @@ export default function Pengaduan() {
   const [showMap, setShowMap] = useState(false);
   const [tempCoords, setTempCoords] = useState<L.LatLng | null>(null);
 
+  // Camera State
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const openCamera = async () => {
+    setIsCameraOpen(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      alert("Tidak dapat mengakses kamera. Pastikan Anda telah memberikan izin.");
+      setIsCameraOpen(false);
+    }
+  };
+
+  const closeCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      const tracks = stream.getTracks();
+      tracks.forEach(track => track.stop());
+    }
+    setIsCameraOpen(false);
+  };
+
+  const takePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const file = new File([blob], "camera_capture.jpg", { type: "image/jpeg" });
+            setImage(file);
+            setImagePreview(URL.createObjectURL(file));
+            closeCamera();
+          }
+        }, 'image/jpeg');
+      }
+    }
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0]) {
+      setImage(e.target.files[0]);
+      setImagePreview(URL.createObjectURL(e.target.files[0]));
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!nama || !nomorHP || !aduan || !coords.lat) {
+      alert("Mohon lengkapi nama, nomor HP, detail aduan, dan lokasi.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('nama', nama);
+      formData.append('nomorHP', nomorHP);
+      formData.append('aduan', aduan);
+      formData.append('lat', coords.lat.toString());
+      formData.append('lng', coords.lng.toString());
+      if (image) {
+        formData.append('image', image);
+      }
+
+      await api.post('/laporan', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      alert('Pengaduan berhasil dikirim!');
+      // Reset form if needed
+      setNama('');
+      setNomorHP('');
+      setAduan('');
+      setImage(null);
+      setImagePreview(null);
+      setCoords({ lat: '', lng: '' });
+    } catch (err) {
+      alert('Gagal mengirim pengaduan. Pastikan server berjalan.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleGetCurrentLocation = () => {
     if (navigator.geolocation) {
@@ -93,38 +191,81 @@ export default function Pengaduan() {
             </div>
 
             <div className="p-8 md:w-2/3 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Nama Pelapor</label>
+                  <input type="text" className="w-full p-4 bg-gray-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500" value={nama} onChange={(e) => setNama(e.target.value)} placeholder="Masukkan nama Anda" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Nomor HP</label>
+                  <input type="tel" className="w-full p-4 bg-gray-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500" value={nomorHP} onChange={(e) => setNomorHP(e.target.value)} placeholder="08xxxxxxxx" required />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-semibold mb-2">Detail Aduan</label>
-                <textarea rows={4} className="w-full p-4 bg-gray-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500" value={aduan} onChange={(e) => setAduan(e.target.value)} placeholder="Tulis laporan di sini..." />
+                <textarea rows={4} className="w-full p-4 bg-gray-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500" value={aduan} onChange={(e) => setAduan(e.target.value)} placeholder="Tulis laporan di sini..." required />
               </div>
 
               <div>
                 <label className="block text-sm font-semibold mb-2">Foto Kejadian</label>
-                <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer hover:bg-blue-50 transition">
-                  {imagePreview ? <img src={imagePreview} className="h-32 mx-auto rounded-lg object-cover" /> : <div className="py-2"><span className="text-2xl block">📸</span><span className="text-xs text-gray-400">Klik untuk lampirkan foto</span></div>}
+                <div className="grid grid-cols-2 gap-3 mb-2">
+                  <button type="button" onClick={openCamera} className="p-3 bg-blue-50 text-blue-600 rounded-xl text-xs font-bold border border-blue-100 flex items-center justify-center gap-2">
+                    📷 Kamera
+                  </button>
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="p-3 bg-gray-50 text-gray-600 rounded-xl text-xs font-bold border border-gray-200 flex items-center justify-center gap-2">
+                    🖼️ Galeri
+                  </button>
                 </div>
-                <input type="file" ref={fileInputRef} className="hidden" onChange={(e) => {
-                  if (e.target.files?.[0]) {
-                    setImage(e.target.files[0]);
-                    setImagePreview(URL.createObjectURL(e.target.files[0]));
-                  }
-                }} />
+                {imagePreview && (
+                  <div className="mt-4">
+                    <img src={imagePreview} className="h-40 mx-auto rounded-xl object-cover shadow-sm border border-gray-200" alt="Preview" />
+                  </div>
+                )}
+                
+                {/* Hidden Inputs */}
+                <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={handleImageChange} />
               </div>
 
               <div>
                 <label className="block text-sm font-semibold mb-2">Titik Lokasi</label>
                 <div className="grid grid-cols-2 gap-3">
-                  <button type="button" onClick={handleGetCurrentLocation} className="p-3 bg-blue-50 text-blue-600 rounded-xl text-xs font-bold border border-blue-100">🛰️ GPS Cepat</button>
-                  <button type="button" onClick={() => setShowMap(true)} className="p-3 bg-gray-50 text-gray-600 rounded-xl text-xs font-bold border border-gray-200">🗺️ Pilih Manual</button>
+                  <button type="button" onClick={handleGetCurrentLocation} className="p-3 bg-blue-50 text-blue-600 rounded-xl text-xs font-bold border border-blue-100 flex items-center justify-center gap-2">
+                    🛰️ GPS Cepat
+                  </button>
+                  <button type="button" onClick={() => setShowMap(true)} className="p-3 bg-gray-50 text-gray-600 rounded-xl text-xs font-bold border border-gray-200 flex items-center justify-center gap-2">
+                    🗺️ Pilih Manual
+                  </button>
                 </div>
-                {coords.lat && <div className="mt-3 p-3 bg-green-50 text-green-700 rounded-xl text-[11px] font-mono">Lokasi Terkunci: {coords.lat}, {coords.lng}</div>}
+                {coords.lat && <div className="mt-3 p-3 bg-green-50 text-green-700 rounded-xl text-[11px] font-mono border border-green-100">Lokasi Terkunci: {coords.lat}, {coords.lng}</div>}
               </div>
 
-              <button onClick={() => alert("Mengirim...")} disabled={loading} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg hover:bg-blue-700 transition">Kirim Pengaduan</button>
+              <button onClick={handleSubmit} disabled={loading} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                {loading ? 'Mengirim...' : 'Kirim Pengaduan'}
+              </button>
             </div>
           </div>
         </motion.div>
       </main>
+
+      {/* MODAL KAMERA */}
+      <AnimatePresence>
+        {isCameraOpen && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black">
+            <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover max-h-[80vh]"></video>
+            <canvas ref={canvasRef} className="hidden"></canvas>
+            
+            <div className="absolute bottom-10 flex gap-6">
+              <button onClick={closeCamera} className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-white backdrop-blur-sm border-2 border-white/50">
+                Batal
+              </button>
+              <button onClick={takePhoto} className="w-20 h-20 bg-white rounded-full flex items-center justify-center border-4 border-gray-300 shadow-xl">
+                <div className="w-16 h-16 bg-white rounded-full border-2 border-black"></div>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* MODAL PETA */}
       <AnimatePresence>

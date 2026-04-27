@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
@@ -6,9 +6,32 @@ export default function Dashboard() {
   const navigate = useNavigate();
   // Simulate empty data state
   const [reports, setReports] = useState([]);
+  const [userName, setUserName] = useState('');
+  const [userRole, setUserRole] = useState('');
+  const [userInstansi, setUserInstansi] = useState('');
+
+  useEffect(() => {
+    setUserName(localStorage.getItem('name') || 'Pengguna');
+    setUserRole(localStorage.getItem('role') || 'Role');
+    setUserInstansi(localStorage.getItem('instansi') || 'Instansi Terkait');
+  }, []);
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
+      {/* Greeting Section */}
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8"
+      >
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-800">
+          Selamat datang, {userName}
+        </h2>
+        <p className="text-gray-500 mt-1">
+          Anda login sebagai <span className="font-semibold text-blue-600">{userRole}</span> dari <span className="font-semibold text-gray-700">{userInstansi}</span>
+        </p>
+      </motion.div>
+
       {/* 4 Cards Grid */}
       <div className="grid grid-cols-2 gap-4 md:gap-6">
         <motion.div
