@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Outlet, Link, useLocation, useNavigate,  } from 'react-router-dom';
-import { 
-  LogOut, Droplet, LayoutDashboard, History, 
+import { Outlet, Link, useLocation, useNavigate, } from 'react-router-dom';
+import {
+  LogOut, Megaphone, LayoutDashboard, History,
   User, Menu, X, Wallet, MapPin, ScanLine
 } from 'lucide-react';
 
@@ -27,11 +27,11 @@ export default function NasabahLayout() {
     <>
       <div className="p-8 flex items-center gap-3">
         <div className="bg-orange-500 p-2.5 rounded-xl shadow-lg shadow-orange-500/20">
-          <Droplet className="text-white w-6 h-6" />
+          <Megaphone className="text-white w-6 h-6" />
         </div>
         <span className="text-2xl font-extrabold text-slate-800 tracking-tight">Jelanta<span className="text-orange-500">HUB</span></span>
       </div>
-      
+
       <nav className="flex-1 px-6 space-y-2 mt-4">
         {menuItems.map((item) => {
           const Icon = item.icon;
@@ -41,11 +41,10 @@ export default function NasabahLayout() {
               key={item.path}
               to={item.path}
               onClick={() => setIsMobileMenuOpen(false)}
-              className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl font-bold transition-all ${
-                isActive 
-                  ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30' 
+              className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl font-bold transition-all ${isActive
+                  ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30'
                   : 'text-slate-500 hover:bg-slate-50 hover:text-orange-500'
-              }`}
+                }`}
             >
               <Icon className="w-5 h-5" />
               {item.label}
@@ -55,8 +54,8 @@ export default function NasabahLayout() {
       </nav>
 
       <div className="p-6 border-t border-slate-100 mt-auto">
-        <button 
-          onClick={handleLogout} 
+        <button
+          onClick={handleLogout}
           className="w-full flex items-center justify-center gap-3 px-4 py-3 text-red-500 bg-red-50 hover:bg-red-100 rounded-2xl font-bold transition-colors"
         >
           <LogOut className="w-5 h-5" />
@@ -91,11 +90,11 @@ export default function NasabahLayout() {
         {/* Header Mobile Only */}
         <header className="lg:hidden bg-white px-6 py-4 border-b border-slate-200 flex justify-between items-center sticky top-0 z-10 shadow-sm">
           <div className="flex items-center gap-2">
-            <Droplet className="text-orange-500 w-6 h-6" />
+            <Megaphone className="text-orange-500 w-6 h-6" />
             <span className="text-xl font-extrabold text-slate-800">JelantaHUB</span>
           </div>
-          <button 
-            onClick={() => setIsMobileMenuOpen(true)} 
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
             className="p-2 text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors"
           >
             <Menu className="w-6 h-6" />

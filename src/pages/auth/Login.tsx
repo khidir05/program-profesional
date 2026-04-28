@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Droplet, ArrowRight } from 'lucide-react';
+import { Megaphone, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function Login() {
@@ -41,7 +41,7 @@ export default function Login() {
         {/* Logo */}
         <div className="flex flex-col items-center mb-6">
           <div className="bg-blue-600 p-4 rounded-full shadow-lg mb-3">
-            <Droplet className="text-white w-7 h-7" />
+            <Megaphone className="text-white w-7 h-7" />
           </div>
           <h2 className="text-2xl font-bold text-gray-800">
             Sistem Pengaduan

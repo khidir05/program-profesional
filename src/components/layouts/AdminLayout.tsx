@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, Droplet, LayoutDashboard, UserCheck, Menu, X } from 'lucide-react';
+import { LogOut, Megaphone, LayoutDashboard, UserCheck, Menu, X } from 'lucide-react';
 
 export default function AdminLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -21,7 +21,7 @@ export default function AdminLayout() {
   const SidebarContent = () => (
     <>
       <div className="p-8 flex items-center gap-3">
-        <div className="bg-orange-500 p-2.5 rounded-xl"><Droplet className="text-white w-6 h-6" /></div>
+        <div className="bg-orange-500 p-2.5 rounded-xl"><Megaphone className="text-white w-6 h-6" /></div>
         <span className="text-2xl font-extrabold text-slate-800 tracking-tight">AdminHUB</span>
       </div>
       <nav className="flex-1 px-6 space-y-2 mt-4">
@@ -30,9 +30,8 @@ export default function AdminLayout() {
           const isActive = location.pathname === item.path; // Cek URL aktif
           return (
             <Link key={item.path} to={item.path} onClick={() => setIsMobileMenuOpen(false)}
-              className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl font-bold transition-all ${
-                isActive ? 'bg-orange-50 text-orange-600 border border-orange-100' : 'text-slate-500 hover:bg-slate-50'
-              }`}>
+              className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl font-bold transition-all ${isActive ? 'bg-orange-50 text-orange-600 border border-orange-100' : 'text-slate-500 hover:bg-slate-50'
+                }`}>
               <Icon className="w-5 h-5" />{item.label}
             </Link>
           );
@@ -63,14 +62,14 @@ export default function AdminLayout() {
       <div className="flex-1 flex flex-col h-screen overflow-y-auto">
         <header className="md:hidden bg-white px-6 py-4 border-b border-slate-200 flex justify-between items-center sticky top-0 z-10">
           <div className="flex items-center gap-2">
-            <Droplet className="text-orange-500 w-6 h-6" /><span className="text-xl font-extrabold text-slate-800">AdminHUB</span>
+            <Megaphone className="text-orange-500 w-6 h-6" /><span className="text-xl font-extrabold text-slate-800">AdminHUB</span>
           </div>
           <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 text-slate-600 bg-slate-100 rounded-xl"><Menu className="w-6 h-6" /></button>
         </header>
 
         {/* OUTLET: Di sinilah halaman spesifik akan dirender */}
         <main className="p-6 md:p-10 max-w-6xl mx-auto w-full">
-          <Outlet /> 
+          <Outlet />
         </main>
       </div>
     </div>
