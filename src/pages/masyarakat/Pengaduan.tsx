@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -41,11 +40,16 @@ function LocationPicker({ position, setPosition }: { position: L.LatLng | null, 
 }
 
 export default function Pengaduan() {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [nama, setNama] = useState('');
-  const [nomorHP, setNomorHP] = useState('');
-  const [aduan, setAduan] = useState('');
+  const [namaPelapor, setNamaPelapor] = useState('');
+  const [emailPelapor, setEmailPelapor] = useState('');
+  const [noHpPelapor, setNoHpPelapor] = useState('');
+  const [hubunganPelapor, setHubunganPelapor] = useState('');
+  const [deskripsi, setDeskripsi] = useState('');
+  const [kategori, setKategori] = useState('');
+  const [instansiId, setInstansiId] = useState('');
+  const [instansiList, setInstansiList] = useState<any[]>([]);
+
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [coords, setCoords] = useState<{ lat: number | string; lng: number | string }>({ lat: '', lng: '' });
@@ -58,6 +62,37 @@ export default function Pengaduan() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch instansi dynamically from backend
+  useEffect(() => {
+    const fetchInstansi = async () => {
+      try {
+        const response = await api.get('/api/instansi/');
+        if (response.data && response.data.status === 'success' && Array.isArray(response.data.data)) {
+          setInstansiList(response.data.data);
+        } else if (Array.isArray(response.data)) {
+          setInstansiList(response.data);
+        } else if (response.data && Array.isArray(response.data.data)) {
+          setInstansiList(response.data.data);
+        } else {
+          // Fallback parsing
+          const arrayVal = Object.values(response.data).find(val => Array.isArray(val));
+          if (arrayVal) {
+            setInstansiList(arrayVal as any[]);
+          }
+        }
+      } catch (err) {
+        console.error("Gagal memuat instansi dari backend, menggunakan data statis default:", err);
+        // Fallback default list so the app is always functional
+        setInstansiList([
+          { id_instansi: "550e8400-e29b-41d4-a716-446655440000", instansi_nama: "Dinas Kesehatan" },
+          { id_instansi: "550e8400-e29b-41d4-a716-446655440001", instansi_nama: "Dinas Sosial Kab. Cilacap" },
+          { id_instansi: "550e8400-e29b-41d4-a716-446655440002", instansi_nama: "Satpol PP" }
+        ]);
+      }
+    };
+    fetchInstansi();
+  }, []);
 
   const openCamera = async () => {
     setIsCameraOpen(true);
@@ -110,38 +145,66 @@ export default function Pengaduan() {
   };
 
   const handleSubmit = async () => {
-    if (!nama || !nomorHP || !aduan || !coords.lat) {
-      alert("Mohon lengkapi nama, nomor HP, detail aduan, dan lokasi.");
+    if (!instansiId) {
+      alert("Mohon pilih Instansi Tujuan.");
+      return;
+    }
+    if (!kategori) {
+      alert("Mohon pilih Kategori Aduan.");
+      return;
+    }
+    if (!deskripsi) {
+      alert("Mohon lengkapi Detail Aduan.");
+      return;
+    }
+    if (!coords.lat) {
+      alert("Mohon pilih titik lokasi aduan.");
       return;
     }
 
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append('nama', nama);
-      formData.append('nomorHP', nomorHP);
-      formData.append('aduan', aduan);
-      formData.append('lat', coords.lat.toString());
-      formData.append('lng', coords.lng.toString());
+      formData.append('instansi_id', instansiId);
+      formData.append('nama_pelapor', namaPelapor || 'Warga');
+      if (emailPelapor) {
+        formData.append('email_pelapor', emailPelapor);
+      }
+      if (noHpPelapor) {
+        formData.append('no_hp_pelapor', noHpPelapor);
+      }
+      if (hubunganPelapor) {
+        formData.append('hubungan_pelapor', hubunganPelapor);
+      }
+      formData.append('deskripsi', deskripsi);
+      formData.append('kategori', kategori);
+      formData.append('latitude', coords.lat.toString());
+      formData.append('longitude', coords.lng.toString());
       if (image) {
-        formData.append('image', image);
+        formData.append('foto', image);
       }
 
-      await api.post('/laporan', formData, {
+      await api.post('/api/laporan/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
       alert('Pengaduan berhasil dikirim!');
-      // Reset form if needed
-      setNama('');
-      setNomorHP('');
-      setAduan('');
+      
+      // Reset form
+      setNamaPelapor('');
+      setEmailPelapor('');
+      setNoHpPelapor('');
+      setHubunganPelapor('');
+      setDeskripsi('');
+      setKategori('');
+      setInstansiId('');
       setImage(null);
       setImagePreview(null);
       setCoords({ lat: '', lng: '' });
-    } catch (err) {
-      alert('Gagal mengirim pengaduan. Pastikan server berjalan.');
+    } catch (err: any) {
+      const errMsg = err.response?.data?.error || err.response?.data?.message || 'Gagal mengirim pengaduan. Pastikan server berjalan.';
+      alert('Gagal mengirim aduan: ' + errMsg);
       console.error(err);
     } finally {
       setLoading(false);
@@ -191,20 +254,105 @@ export default function Pengaduan() {
             </div>
 
             <div className="p-8 md:w-2/3 space-y-6">
+              {/* Kategori & Instansi Tujuan */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Nama Pelapor</label>
-                  <input type="text" className="w-full p-4 bg-gray-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500" value={nama} onChange={(e) => setNama(e.target.value)} placeholder="Masukkan nama Anda" required />
+                  <label className="block text-sm font-semibold mb-2">Kategori Aduan <span className="text-red-500">*</span></label>
+                  <select
+                    className="w-full p-4 bg-gray-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500"
+                    value={kategori}
+                    onChange={(e) => setKategori(e.target.value)}
+                    required
+                  >
+                    <option value="">-- Pilih Kategori --</option>
+                    <option value="ODGJ">ODGJ (Orang Dengan Gangguan Jiwa)</option>
+                    <option value="PGOT">PGOT (Pengemis, Gelandangan, Orang Terlantar)</option>
+                  </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Nomor HP</label>
-                  <input type="tel" className="w-full p-4 bg-gray-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500" value={nomorHP} onChange={(e) => setNomorHP(e.target.value)} placeholder="08xxxxxxxx" required />
+                  <label className="block text-sm font-semibold mb-2">Instansi Tujuan <span className="text-red-500">*</span></label>
+                  <select
+                    className="w-full p-4 bg-gray-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500"
+                    value={instansiId}
+                    onChange={(e) => setInstansiId(e.target.value)}
+                    required
+                  >
+                    <option value="">-- Pilih Instansi Penindak --</option>
+                    {instansiList.map((inst: any) => (
+                      <option key={inst.id_instansi || inst.id} value={inst.id_instansi || inst.id}>
+                        {inst.instansi_nama || inst.nama}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
+              {/* Informasi Pelapor */}
+              <div className="bg-blue-50/50 p-6 rounded-3xl space-y-4 border border-blue-100/50">
+                <h3 className="text-sm font-bold text-blue-700">Informasi Pelapor</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold mb-2 text-gray-600">Nama Pelapor</label>
+                    <input
+                      type="text"
+                      className="w-full p-4 bg-white border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500"
+                      value={namaPelapor}
+                      onChange={(e) => setNamaPelapor(e.target.value)}
+                      placeholder="Contoh: Ahmad (Default: Warga)"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-2 text-gray-600">Hubungan dengan Korban</label>
+                    <select
+                      className="w-full p-4 bg-white border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500"
+                      value={hubunganPelapor}
+                      onChange={(e) => setHubunganPelapor(e.target.value)}
+                    >
+                      <option value="">-- Pilih Hubungan --</option>
+                      <option value="Diri Sendiri">Diri Sendiri</option>
+                      <option value="Keluarga">Keluarga</option>
+                      <option value="Tetangga">Tetangga</option>
+                      <option value="Kerabat">Kerabat</option>
+                      <option value="Warga Sekitar">Warga Sekitar</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold mb-2 text-gray-600">Nomor HP</label>
+                    <input
+                      type="tel"
+                      className="w-full p-4 bg-white border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500"
+                      value={noHpPelapor}
+                      onChange={(e) => setNoHpPelapor(e.target.value)}
+                      placeholder="Contoh: 081234567890"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-2 text-gray-600">Email Pelapor</label>
+                    <input
+                      type="email"
+                      className="w-full p-4 bg-white border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500"
+                      value={emailPelapor}
+                      onChange={(e) => setEmailPelapor(e.target.value)}
+                      placeholder="Contoh: pelapor@email.com"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Detail Aduan */}
               <div>
-                <label className="block text-sm font-semibold mb-2">Detail Aduan</label>
-                <textarea rows={4} className="w-full p-4 bg-gray-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500" value={aduan} onChange={(e) => setAduan(e.target.value)} placeholder="Tulis laporan di sini..." required />
+                <label className="block text-sm font-semibold mb-2">Detail Aduan <span className="text-red-500">*</span></label>
+                <textarea
+                  rows={4}
+                  className="w-full p-4 bg-gray-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500"
+                  value={deskripsi}
+                  onChange={(e) => setDeskripsi(e.target.value)}
+                  placeholder="Tuliskan situasi di lokasi secara lengkap agar petugas mudah mengenali korban..."
+                  required
+                />
               </div>
 
               <div>

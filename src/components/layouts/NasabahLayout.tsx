@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate, } from 'react-router-dom';
 import {
   LogOut, Megaphone, LayoutDashboard, History,
-  User, Menu, X, Wallet, MapPin, ScanLine
+  User, Menu, X, ScanLine
 } from 'lucide-react';
 
 export default function NasabahLayout() {
