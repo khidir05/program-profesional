@@ -1,7 +1,14 @@
 import axios from 'axios';
 
 // Siapkan base URL yang mudah diubah atau diambil dari environment variable
-const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+let baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+// Bersihkan baseURL jika berakhiran /api/ atau /api agar tidak terjadi penumpukan path /api/api/ pada request
+if (baseURL.endsWith('/api/')) {
+  baseURL = baseURL.slice(0, -5);
+} else if (baseURL.endsWith('/api')) {
+  baseURL = baseURL.slice(0, -4);
+}
 
 const api = axios.create({
   baseURL: baseURL,
